@@ -1,0 +1,10 @@
+services:
+  scheduler:
+    build: .
+    image: mini-project-1-scheduler:latest
+    container_name: shift-scheduler
+    stdin_open: true
+    tty: true
+    volumes:
+      - ./data:/data
+
