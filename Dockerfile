@@ -1,16 +1,29 @@
-# Dockerfile for Mini Project 1
+# Dockerfile - Debian base, includes jq and ttyd for web terminal
 FROM debian:bookworm-slim
- 
-# Install bash & jq
-RUN apt-get update && apt-get install -y --no-install-recommends bash jq && rm -rf /var/lib/apt/lists/*
- 
-# App files
+
+ARG IMAGE_VERSION=dev
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+      bash jq ca-certificates curl git \
+      build-essential \
+      # ttyd may not be in minimal repos in some images; try apt first
+      ttyd || true && \
+    rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
+
+# Copy your scheduler script (tests/shift_scheduler.sh)
 COPY tests/shift_scheduler.sh /app/shift_scheduler.sh
 RUN chmod +x /app/shift_scheduler.sh
- 
-# Data directory (to be mounted as a volume)
+
+# record built image version for runtime inspection (used to prove canary vs stable)
+ARG IMAGE_VERSION
+RUN echo "${IMAGE_VERSION}" > /app/VERSION
+
 VOLUME ["/data"]
-ENV DATA_FILE=/data/shifts.json
- 
-ENTRYPOINT ["/app/shift_scheduler.sh"]
+EXPOSE 8080
+
+# Start a web-terminal that runs the scheduler (ttyd). If ttyd not available,
+# fall back to running the script directly so pod will still run the app.
+CMD ["/bin/bash","-lc","if command -v ttyd >/dev/null 2>&1; then exec ttyd -p 8080 -c root:root bash -lc '/app/shift_scheduler.sh'; else exec /app/shift_scheduler.sh; fi"]
