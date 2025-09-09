@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: shift-scheduler-canary
+  namespace: shift-scheduler-ns
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: shift-scheduler
+      track: canary
+  template:
+    metadata:
+      labels:
+        app: shift-scheduler
+        track: canary
+    spec:
+      containers:
+      - name: shift-scheduler
+        image: IMAGE_PLACEHOLDER
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8080
+        volumeMounts:
+        - mountPath: /data
+          name: data
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: shift-scheduler-pvc
